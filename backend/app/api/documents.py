@@ -58,9 +58,25 @@ async def upload_document(
     db.commit()
     db.refresh(document)
     
-    # TODO: Trigger background processing
-    # background_tasks.add_task(process_document_task, document.id, file_path, db)
-    # For now, you can process synchronously or implement Celery
+    # Trigger background processing
+    # Note: BackgroundTasks can handle async functions, but we need a new DB session
+    async def process_document_task(file_path: str, doc_id: int):
+        """Wrapper for async document processing in background tasks"""
+        # Create a new database session for the background task
+        from app.db.session import SessionLocal
+        task_db = SessionLocal()
+        try:
+            processor = DocumentProcessor(task_db)
+            await processor.process_document(file_path, doc_id)
+        finally:
+            task_db.close()
+    
+    if background_tasks:
+        background_tasks.add_task(process_document_task, file_path, document.id)
+    else:
+        # Fallback: process synchronously (not recommended for production)
+        import asyncio
+        asyncio.create_task(process_document_task(file_path, document.id))
     
     return {
         "id": document.id,
