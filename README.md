@@ -441,23 +441,33 @@ docker-compose up -d
 2. **Complete source code** (backend + frontend)
 3. **Docker configuration** (docker-compose.yml)
 4. **Documentation** (README, API docs, architecture)
-5. **Sample data** (at least one test PDF)
+5. **Test Results**: Screenshots and examples using the provided `1706.03762v7.pdf` file
 
 ### README Must Include
 - Project overview
 - Tech stack
 - Setup instructions (Docker)
 - Environment variables (.env.example)
-- API testing examples
+- API testing examples **using the provided PDF**
 - Features implemented
 - Known limitations
 - Future improvements
-- Screenshots (minimum 5):
-  - Document upload screen
-  - Document processing completion screen
-  - Chat interface
-  - Answer example with images
-  - Answer example with tables
+- **Screenshots (minimum 5) using `1706.03762v7.pdf`**:
+  - Document upload screen with the test PDF
+  - Document processing completion screen showing extraction results
+  - Chat interface with sample questions
+  - Answer example with images (Transformer architecture diagram)
+  - Answer example with tables (BLEU score comparisons)
+
+### Demo Requirements
+Your submission should include working examples with the "Attention Is All You Need" paper:
+
+1. **Document Processing Demo**: Show successful extraction of text, images, and tables
+2. **Chat Examples**: Include at least 3 working Q&A examples using the test PDF
+3. **Multimodal Responses**: Demonstrate answers that include both text and visual elements
+4. **Error Handling**: Show how your system handles edge cases
+
+**Note**: All evaluators will test your system using the same PDF to ensure fair and consistent assessment.
 
 ### How to Submit
 1. Push code to GitHub
@@ -469,41 +479,103 @@ docker-compose up -d
 
 ## Test Scenarios
 
+Use the provided "Attention Is All You Need" paper (`1706.03762v7.pdf`) for these test scenarios:
+
 ### Scenario 1: Basic Document Processing
-1. Upload a technical paper PDF
+1. Download and upload `1706.03762v7.pdf`
 2. Verify text, images, and tables extraction
 3. Check extracted content on document detail page
+4. **Expected Results**:
+   - Text chunks: ~80-100 chunks
+   - Images: ~6 figures (architecture diagrams)
+   - Tables: ~4-6 tables (performance results)
 
 ### Scenario 2: Text-based Question
-1. Ask "What is the main conclusion of this paper?"
-2. Verify answer is generated with relevant text context
+1. Ask: **"What is the main contribution of this paper?"**
+2. **Expected Answer**: Should mention Transformer architecture and attention mechanisms
+3. Verify answer includes relevant text context from abstract/conclusion
 
 ### Scenario 3: Image-related Question
-1. Ask "Show me the architecture diagram"
-2. Verify related images are displayed in chat
+1. Ask: **"Show me the Transformer architecture diagram"**
+2. **Expected Result**: Should display Figure 1 (Transformer model architecture)
+3. Verify the architecture diagram image is included in chat response
 
 ### Scenario 4: Table-related Question
-1. Ask "What are the experimental results?"
-2. Verify related tables are displayed in chat
+1. Ask: **"What are the BLEU scores for different models?"**
+2. **Expected Result**: Should display performance comparison tables
+3. Verify tables with BLEU scores are shown in chat
 
 ### Scenario 5: Multi-turn Conversation
-1. First question: "What is the dataset used?"
-2. Follow-up: "How many samples does it contain?"
-3. Verify previous conversation context is maintained
+1. First question: **"What attention mechanism does this paper propose?"**
+2. Follow-up: **"How does it compare to RNN and CNN?"**
+3. **Expected Behavior**: Second answer should reference the first question's context
+4. Verify conversation history is maintained
+
+### Scenario 6: Specific Technical Question
+1. Ask: **"What is the computational complexity of self-attention?"**
+2. **Expected Answer**: Should mention O(n²·d) complexity and reference Section 3.2.1
+3. Verify answer includes mathematical details from the paper
+
+### Additional Test Questions to Try
+
+**Architecture Questions**:
+- "Explain the encoder-decoder structure"
+- "What are the different types of attention used?"
+
+**Performance Questions**:
+- "How does the model perform on WMT translation tasks?"
+- "What are the training details and hyperparameters?"
+
+**Technical Questions**:
+- "What is positional encoding and why is it needed?"
+- "How many attention heads are used in the base model?"
 
 ---
 
-## Sample PDF
+## Sample PDF for Testing
 
-A sample PDF file is provided: `1706.03762v7.pdf`
+For testing your implementation, download and use this technical paper:
 
-This is a technical paper ("Attention Is All You Need") with:
-- Multiple pages with text content
-- Diagrams and architecture figures
-- Tables with experimental results
-- Complex layouts for testing
+**📄 Test Document**: ["Attention Is All You Need" Paper](https://arxiv.org/pdf/1706.03762.pdf)
+- **Direct Download**: `https://arxiv.org/pdf/1706.03762.pdf`
+- **File Name**: `1706.03762v7.pdf` (save as this name)
+- **Paper Title**: "Attention Is All You Need" (Transformer Architecture)
 
-You should use this PDF to test your implementation.
+### Why This PDF is Perfect for Testing
+
+This technical paper contains all the elements needed to test your system:
+
+✅ **Text Content**: 
+- Multiple pages with academic text
+- Abstract, introduction, methodology sections
+- References and citations
+
+✅ **Images/Figures**: 
+- Architecture diagrams (Figure 1: Transformer model architecture)
+- Attention visualization diagrams
+- Model comparison charts
+
+✅ **Tables**: 
+- Performance comparison tables
+- Experimental results
+- Hyperparameter settings
+
+✅ **Complex Layout**: 
+- Two-column academic format
+- Mathematical equations
+- Mixed content types
+
+### Download Instructions
+
+```bash
+# Download the test PDF
+wget https://arxiv.org/pdf/1706.03762.pdf -O 1706.03762v7.pdf
+
+# Or use curl
+curl -o 1706.03762v7.pdf https://arxiv.org/pdf/1706.03762.pdf
+```
+
+**Important**: Use this specific PDF for your testing and demonstrations to ensure consistent evaluation across all submissions.
 
 ---
 
@@ -662,8 +734,17 @@ A: Save to `backend/uploads/images/` directory and store only the path in DB.
 **Q: How should I display tables?**
 A: Render tables as images or display JSON data as HTML tables in frontend.
 
+**Q: Where do I get the test PDF file?**
+A: Download from `https://arxiv.org/pdf/1706.03762.pdf` and save as `1706.03762v7.pdf`. This is the "Attention Is All You Need" paper.
+
+**Q: Can I use a different PDF for testing?**
+A: For development, yes. But your final submission must demonstrate working examples with the provided "Attention Is All You Need" paper for consistent evaluation.
+
+**Q: What if my system can't process the test PDF?**
+A: The test PDF is a standard academic paper. If your system can't handle it, there may be issues with your PDF parsing or Docling integration that need to be fixed.
+
 **Q: How do I test the system locally?**
-A: Follow the Getting Started section and use the provided sample PDF (1706.03762v7.pdf).
+A: Follow the Getting Started section, download the test PDF, upload it through your frontend, and try the sample questions from the Test Scenarios section.
 
 ---
 
