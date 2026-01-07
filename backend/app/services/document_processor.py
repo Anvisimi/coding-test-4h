@@ -1,15 +1,6 @@
 """
-Document processing service using Docling.
+Document processing service using Docling
 
-DONE: Implemented PDF document parsing using Docling
-DONE: Implemented text extraction and chunking (via TextExtractor)
-DONE: Implemented image extraction (via ImageExtractor)
-DONE: Implemented table extraction (via TableExtractor)
-DONE: Implemented content storage in database
-DONE: Implemented embedding generation for text chunks (via VectorStore)
-DONE: Implemented error handling with retry/recovery strategies
-
-Original TODO requirements from backend/app/services/before/document_processor.py:
 TODO: Implement this service to:
 1. Parse PDF documents using Docling
 2. Extract text, images, and tables
@@ -44,7 +35,7 @@ class DocumentProcessor:
     - TextExtractor: Handles text extraction and chunking
     - ImageExtractor: Handles image extraction from Docling and PyMuPDF
     - TableExtractor: Handles table extraction and rendering
-    
+
     Includes error recovery strategies:
     - Retry with exponential backoff for transient failures
     - Fallback mechanisms (Docling → PyMuPDF)
@@ -57,12 +48,12 @@ class DocumentProcessor:
         self.binary_validator = BinaryValidator()
         # Initialize DocumentConverter with PDF format
         self.converter = DocumentConverter(allowed_formats=[InputFormat.PDF])
-        
+
         # Initialize extractors
         self.text_extractor = TextExtractor(db, self.vector_store, self.binary_validator)
         self.image_extractor = ImageExtractor(db, self.binary_validator)
         self.table_extractor = TableExtractor(db)
-    
+
     async def process_document(self, file_path: str, document_id: int) -> Dict[str, Any]:
         """
         Process a PDF document using Docling and extractors.
@@ -91,7 +82,7 @@ class DocumentProcessor:
         3. If image extraction fails, continue with text/tables
         4. If table extraction fails, continue with text/images
         5. Update document status to 'error' only if all extractions fail
-        
+
         Args:
             file_path: Path to the uploaded PDF file
             document_id: Database ID of the document
@@ -157,7 +148,7 @@ class DocumentProcessor:
                 document.images_count = images_count
                 document.tables_count = tables_count
                 self.db.commit()
-            
+
             # Update status to completed
             processing_time = time.time() - start_time
             await self._update_document_status(document_id, "completed")
@@ -207,10 +198,10 @@ class DocumentProcessor:
                     self.converter.convert,
                     file_path
                 )
-                
+
                 # Get the document from result
                 doc = result.document if hasattr(result, 'document') else result
-                
+
                 # Get pages
                 pages = []
                 try:
@@ -233,7 +224,7 @@ class DocumentProcessor:
                 
                 print(f"Successfully parsed PDF: {total_pages} pages")
                 return doc, pages, total_pages
-                
+
             except Exception as e:
                 last_error = e
                 if attempt < max_retries - 1:
@@ -261,7 +252,7 @@ class DocumentProcessor:
         - Try TextExtractor first
         - If it fails, log error but don't fail the entire document
         - Return 0 if extraction fails completely
-        
+
         Returns:
             Number of text chunks extracted
         """
@@ -285,12 +276,12 @@ class DocumentProcessor:
     ) -> int:
         """
         Extract images with error recovery.
-        
+
         Recovery Strategy:
         - Try ImageExtractor first
         - If it fails, log error but don't fail the entire document
         - Return 0 if extraction fails completely
-        
+
         Returns:
             Number of images extracted
         """
@@ -302,7 +293,7 @@ class DocumentProcessor:
             print(f"Image extraction failed: {e}")
             # Return 0 to indicate failure, but don't raise exception
             return 0
-    
+
     async def _extract_tables_with_recovery(
         self,
         doc: Any,
@@ -310,12 +301,12 @@ class DocumentProcessor:
     ) -> int:
         """
         Extract tables with error recovery.
-        
+
         Recovery Strategy:
         - Try TableExtractor first
         - If it fails, log error but don't fail the entire document
         - Return 0 if extraction fails completely
-        
+
         Returns:
             Number of tables extracted
         """
@@ -339,7 +330,7 @@ class DocumentProcessor:
         - Updates processing_status field
         - Stores error_message if provided
         - Commits changes to database
-        
+
         Args:
             document_id: Document ID
             status: New status ('pending', 'processing', 'completed', 'error')
