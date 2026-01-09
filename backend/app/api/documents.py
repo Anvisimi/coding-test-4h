@@ -11,15 +11,14 @@ from app.core.config import settings
 import os
 import uuid
 from datetime import datetime
-import asyncio
 
 router = APIRouter()
 
 
 @router.post("/upload")
 async def upload_document(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_db)
 ):
     """
@@ -59,8 +58,7 @@ async def upload_document(
     db.commit()
     db.refresh(document)
     
-    # Trigger background processing
-    # Use asyncio.create_task to run in background without blocking
+    # Define background task function
     async def process_document_task(file_path: str, doc_id: int):
         """Wrapper for async document processing in background"""
         # Create a new database session for the background task
@@ -76,9 +74,9 @@ async def upload_document(
         finally:
             task_db.close()
     
-    # Create background task (non-blocking, runs after response is sent)
+    # Use FastAPI's BackgroundTasks (runs after response is sent)
     # This ensures the upload endpoint returns immediately
-    asyncio.create_task(process_document_task(file_path, document.id))
+    background_tasks.add_task(process_document_task, file_path, document.id)
     
     return {
         "id": document.id,
