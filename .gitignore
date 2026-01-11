@@ -31,6 +31,12 @@ uploads/
 *.jpg
 *.jpeg
 
+# Screenshots (keep these - needed for documentation)
+!screenshots/
+!screenshots/**/*.png
+!screenshots/**/*.jpg
+!screenshots/**/*.jpeg
+
 # Database
 *.db
 *.sqlite
