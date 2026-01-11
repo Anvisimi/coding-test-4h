@@ -29,8 +29,125 @@ This implementation delivers a **Multimodal Document Chat System** that processe
 
 **Infrastructure:**
 - Docker & Docker Compose - Containerization
-- Redis - Caching (optional)
 - pytest - Testing framework (61% code coverage)
+
+---
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Frontend Layer                       │
+│              (Next.js 14 + TailwindCSS)                 │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐               │
+│  │ Upload   │  │ Documents│  │   Chat   │               │
+│  │   Page   │  │   List   │  │ Interface│               │
+│  └──────────┘  └──────────┘  └──────────┘               │
+└─────────────────────┬───────────────────────────────────┘
+                      │ HTTP/REST API
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│                   Backend API Layer                     │
+│                    (FastAPI)                            │
+│  ┌──────────────────┐  ┌──────────────────┐             │
+│  │ Documents API    │  │   Chat API       │             │
+│  │ - Upload         │  │   - Send Message │             │
+│  │ - List/Get       │  │   - Conversations│             │
+│  │ - Delete         │  │   - History      │             │
+│  └────────┬─────────┘  └────────┬─────────┘             │
+└───────────┼─────────────────────┼───────────────────────┘
+            │                     │
+            ▼                     ▼
+┌──────────────────┐    ┌──────────────────────────────┐
+│ Document         │    │      Chat Engine             │
+│ Processor        │    │   (RAG: Retrieval-Augmented  │
+│                  │    │        Generation)           │
+│ Orchestrates:    │    │  ┌──────────────────────┐    │
+│ - Docling Parser │    │  │ Load Conversation    │    │
+│ - Extractors     │    │  │ History              │    │
+│ - Validators     │    │  └──────────┬───────────┘    │
+└──────┬───────────┘    │             │                │
+       │                │             ▼                │
+       │                │  ┌──────────────────────┐    │
+       ├────────────────┼─▶│ Vector Search        │    │
+       │                │  │ (Semantic Similarity)│    │
+       │                │  │ (RAG Retrieval)      │    │
+       │                │  └──────────┬───────────┘    │
+       │                │             │                │
+       │                │             ▼                │
+       │                │  ┌──────────────────────┐    │
+       │                │  │ Find Related Media   │    │
+       │                │  │ (Images/Tables)      │    │
+       │                │  └──────────┬───────────┘    │
+       │                │             │                │
+       │                │             ▼                │
+       │                │  ┌──────────────────────┐    │
+       │                │  │ RAG Generation       │    │
+       │                │  │ (Context + History)  │    │
+       │                │  │ → LLM: OpenAI        │    │
+       │                │  │   GPT-4o-mini        │    │
+       │                │  └──────────────────────┘    │
+       │                └──────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────────────────────────┐
+│              Extraction & Processing Layer               │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │ Text         │  │ Image        │  │ Table        │    │
+│  │ Extractor    │  │ Extractor    │  │ Extractor    │    │
+│  │              │  │              │  │              │    │
+│  │ - Chunking   │  │ - Docling    │  │ - Structure  │    │
+│  │ - Overlap    │  │ - PyMuPDF    │  │ - Rendering  │    │
+│  │ - Metadata   │  │ - Metadata   │  │ - Metadata   │    │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘    │
+│         │                 │                 │            │
+│         └─────────┬───────┴─────────┬───────┘            │
+│                   │                 │                    │
+│                   ▼                 ▼                    │
+│         ┌──────────────────┐  ┌──────────────────┐       │
+│         │ Binary Validator │  │ Vector Store     │       │
+│         │                  │  │                  │       │
+│         │ - Validate text  │  │ - Embeddings:    │       │
+│         │ - Filter binary  │  │   OpenAI         │       │
+│         │ - Clean data     │  │   text-embedding-│       │
+│         └──────────────────┘  │   3-small (1536) │       │
+│                               │ - Storage        │       │
+│                               │ - Search         │       │
+│                               └─────────┬────────┘       │
+└─────────────────────────────────────────┼────────────────┘
+                                          │
+                    ┌─────────────────────┼─────────────────────┐
+                    │                     │                     │
+                    ▼                     ▼                     ▼
+    ┌────────────────────── ┐  ┌──────────────────────┐  ┌──────────────────────┐
+    │   PostgreSQL +        │  │    File Storage      │  │   LLM Provider       │
+    │   pgvector            │  │                      │  │                      │
+    │                       │  │  - PDFs              │  │  - OpenAI            │
+    │  - Document Metadata  │  │  - Images            │  │    (GPT-4o-mini)     │
+    │  - Text Chunks        │  │  - Tables            │  │                      │
+    │  - Vector Embeddings  │  │                      │  │                      │
+    │  - Images Metadata    │  │                      │  │                      │
+    │  - Tables Metadata    │  │                      │  │                      │
+    │  - Conversations      │  │                      │  │                      │
+    │  - Messages           │  │                      │  │                      │
+    └───────────────────────┘  └──────────────────────┘  └──────────────────────┘
+```
+
+**Key Components:**
+
+1. **Frontend Layer**: Next.js application with upload, document list, and chat interfaces
+2. **API Layer**: FastAPI REST endpoints for document management and chat
+3. **Document Processor**: Orchestrates PDF parsing using Docling and coordinates extraction
+4. **Extractors**: Specialized modules for text, image, and table extraction
+   - **TextExtractor**: Handles text chunking with overlap and metadata
+   - **ImageExtractor**: Extracts images from Docling and PyMuPDF with fallback
+   - **TableExtractor**: Extracts structured tables and renders them as images
+5. **Binary Validator**: Validates and filters binary data from text extraction
+6. **Chat Engine**: Implements RAG (Retrieval-Augmented Generation) pipeline with conversation history, semantic search, and LLM integration
+7. **Vector Store**: Manages embeddings using OpenAI text-embedding-3-small (1536 dimensions) and similarity search using pgvector
+8. **Database**: PostgreSQL with pgvector extension for vector operations and metadata storage
+9. **File Storage**: Filesystem storage for PDFs, extracted images, and table renders
+10. **LLM Provider**: OpenAI GPT-4o-mini for response generation
 
 ---
 
@@ -382,7 +499,6 @@ curl -X POST "http://localhost:8000/api/chat" \
 
 5. **Frontend**
    - Basic UI implementation
-   - No real-time processing updates
 
 ---
 
