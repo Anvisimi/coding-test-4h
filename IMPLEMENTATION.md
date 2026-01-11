@@ -428,26 +428,37 @@ All screenshots demonstrate the system using `1706.03762v7.pdf` ("Attention Is A
 
 ### 1. Document Upload Screen
 ![Document Upload](screenshots/01-upload-screen.png)
+![Document Upload](screenshots/02-upload-screen.png)
 *Uploading the test PDF file through the web interface*
 
 ### 2. Document Processing Completion
-![Processing Complete](screenshots/02-processing-complete.png)
+![Processing Complete](screenshots/03-processing-complete.png)
 *Processing results showing extraction statistics:
-- Text chunks: 87
+- Text chunks: 83
 - Images: 6 figures
 - Tables: 4 tables
 - Status: Completed*
 
 ### 3. Chat Interface
-![Chat Interface](screenshots/03-chat-interface.png)
+![Chat Interface](screenshots/04-chat-interface.png)
 *Chat interface with sample questions about the Transformer paper*
 
 ### 4. Answer with Images (Transformer Architecture Diagram)
-![Answer with Images](screenshots/04-answer-with-images.png)
+![Answer with Images](screenshots/05-answer-with-images.png)
 *Chat response showing Figure 1 (Transformer architecture diagram) along with text explanation*
 
 ### 5. Answer with Tables (BLEU Score Comparisons)
-![Answer with Tables](screenshots/05-answer-with-tables.png)
+![Answer with Tables](screenshots/06-answer-with-tables.png)
+![Answer with Tables](screenshots/07-answer-with-tables.png)
+*Chat response displaying performance comparison tables with BLEU scores*
+
+### 6. Multi-turn Conversation
+![Multi-turn Conversation](screenshots/09-multiturn-question.png)
+![Multi-turn Conversation](screenshots/08-multiturn-question.png)
+*Chat response displaying performance comparison tables with BLEU scores*
+
+### 7. Specific Technical Question
+![Specific Technical Question](screenshots/10-tech-question.png)
 *Chat response displaying performance comparison tables with BLEU scores*
 
 ---

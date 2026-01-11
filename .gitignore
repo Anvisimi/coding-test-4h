@@ -44,3 +44,12 @@ docker-compose.override.yml
 # OS
 .DS_Store
 Thumbs.db
+
+# Coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.cover
+.hypothesis/
+.pytest_cache/
