@@ -550,3 +550,35 @@ class TestVectorStore:
         assert len(related["tables"]) > 0
         table_ids = [tbl["id"] for tbl in related["tables"]]
         assert table.id in table_ids
+    
+    @pytest.mark.asyncio
+    async def test_similarity_search_error_handling(self, test_db, monkeypatch):
+        """Test similarity_search error handling"""
+        async def mock_generate_embedding(query):
+            raise Exception("Embedding generation failed")
+        
+        vector_store = VectorStore(test_db)
+        vector_store.generate_embedding = mock_generate_embedding
+        
+        with pytest.raises(Exception):
+            await vector_store.similarity_search("test query", document_id=None, k=5)
+    
+    @pytest.mark.asyncio
+    async def test_similarity_search_raises_on_error(self, test_db, monkeypatch):
+        """Test similarity_search raises exception on error"""
+        mock_embedding = np.array([0.15] * 1536, dtype=np.float32)
+        
+        async def mock_generate_embedding(query):
+            return mock_embedding
+        
+        vector_store = VectorStore(test_db)
+        vector_store.generate_embedding = mock_generate_embedding
+        
+        # Mock SQL execution to raise error
+        def mock_execute(sql, params, **kwargs):
+            raise Exception("SQL execution failed")
+        
+        vector_store.db.execute = mock_execute
+        
+        with pytest.raises(Exception):
+            await vector_store.similarity_search("test query", document_id=None, k=5)

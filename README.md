@@ -463,15 +463,31 @@ curl -X POST "http://localhost:8000/api/chat" \
 
 ### Testing
 
-- **Coverage:** 61% (exceeds 60% requirement)
-- **Tests:** 92 passing tests
-- **Scope:** Unit tests (core services) + Integration tests (API endpoints)
+- **Overall Coverage:** 77%
+- **Unit Test Coverage:** 74% (115 tests)
+- **Integration Test Coverage:** 29% (10 tests)
 - **Coverage Areas:**
   - Document processing logic
   - Vector store operations
   - Chat engine functionality
   - API error handling
   - LLM provider integration
+
+**Running Tests:**
+```bash
+# Run all tests (unit + integration)
+cd backend
+pytest
+
+# Run unit tests only
+pytest tests/unit/
+
+# Run integration tests only
+pytest tests/integration/
+
+# Run with coverage report
+pytest --cov=app --cov-config=.coveragerc --cov-report=term
+```
 
 ---
 
