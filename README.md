@@ -1,781 +1,596 @@
-# Multimodal Document Chat System - Coding Test
+# Implementation Documentation
 
 ## Project Overview
 
-Build a system that allows users to upload PDF documents, extract text, images, and tables, and engage in multimodal chat based on the extracted content.
+This implementation delivers a **Multimodal Document Chat System** that processes PDF documents and enables intelligent Q&A conversations. The system extracts text, images, and tables from PDFs, stores them with vector embeddings for semantic search, and provides contextually relevant answers using RAG (Retrieval-Augmented Generation) with multimodal support.
 
-### Reference Materials
-
-This coding test is inspired by modern AI document processing capabilities. For background understanding of the underlying AI principles, you may reference these official technical documents:
-
-- **Anthropic Claude 3 Model Card**: https://www-cdn.anthropic.com/de8ba9b01c9ab7cbabf5c33b80b7bbc618857627/Model_Card_Claude_3.pdf
-- **Claude Opus 4 & Sonnet 4 System Card**: https://www-cdn.anthropic.com/4263b940cabb546aa0e3283f35b686f4f3b2ff47.pdf
-
-These documents provide insights into:
-- Multimodal AI capabilities (text + vision)
-- Document understanding and processing approaches
-- AI safety considerations in production systems
-- Constitutional AI principles for responsible AI development
-
-**Note**: The task below is an independent implementation challenge and does not require reproducing any content from these reference materials.
-
-### Core Features
-1. **Document Processing**: PDF parsing using Docling (extract text, images, tables)
-2. **Vector Store**: Store extracted content in vector database
-3. **Multimodal Chat**: Provide answers with related images/tables for text questions
-4. **Multi-turn Conversation**: Maintain conversation context for continuous questioning
+**Core Value Proposition:**
+- Upload PDF documents and automatically extract structured content
+- Ask questions in natural language and receive answers with supporting visual evidence
+- Maintain conversation context across multiple turns
+- Support for multiple LLM providers (OpenAI, Ollama, Gemini, Groq)
 
 ---
 
-## Provided Components (Starting Point)
+## Tech Stack
 
-The following items are **already implemented and provided**:
+**Backend:**
+- FastAPI (Python 3.11+) - REST API framework
+- Docling - PDF parsing and content extraction
+- PostgreSQL 15 + pgvector - Vector database for semantic search
+- SQLAlchemy - ORM for database operations
+- OpenAI API / HuggingFace - Embedding generation
+- Multiple LLM providers (OpenAI, Ollama, Gemini, Groq)
 
-### Infrastructure Setup
-- Docker Compose configuration (PostgreSQL+pgvector, Redis, Backend, Frontend)
-- Database schema and models (SQLAlchemy)
-- API base structure (FastAPI)
-- Frontend base structure (Next.js + TailwindCSS)
+**Frontend:**
+- Next.js 14 (App Router) - React framework
+- TailwindCSS - Styling
+- shadcn/ui - UI component library
 
-### Database Models
-- `Document` - Uploaded document information
-- `DocumentChunk` - Text chunks (with vector embeddings)
-- `DocumentImage` - Extracted images
-- `DocumentTable` - Extracted tables
-- `Conversation` - Chat sessions
-- `Message` - Chat messages
-
-### API Endpoints (Skeleton provided)
-- `POST /api/documents/upload` - Upload document
-- `GET /api/documents` - List documents
-- `GET /api/documents/{id}` - Document details
-- `DELETE /api/documents/{id}` - Delete document
-- `POST /api/chat` - Send chat message
-- `GET /api/conversations` - List conversations
-- `GET /api/conversations/{id}` - Get conversation history
-
-### Frontend Pages (Layout only)
-- `/` - Home (document list)
-- `/upload` - Document upload
-- `/chat` - Chat interface
-- `/documents/[id]` - Document details
-
-### Development Tools
-- FastAPI Swagger UI (`http://localhost:8000/docs`)
-- Hot reload (Backend & Frontend)
-- Environment configuration
-
----
-
-## Core Features to Implement (Your Job)
-
-You need to implement the following **3 core features**:
-
-### 1. Document Processing Pipeline (Critical)
-
-**Location**: `backend/app/services/document_processor.py`
-
-**Requirements**:
-```python
-class DocumentProcessor:
-    async def process_document(self, file_path: str, document_id: int) -> Dict[str, Any]:
-        """
-        Process a PDF document to extract text, images, and tables.
-        
-        Implementation steps:
-        1. Parse PDF using Docling
-        2. Extract and chunk text (for vector storage)
-        3. Extract and save images (filesystem + DB)
-        4. Extract and save tables (structured data + image)
-        5. Error handling and status updates
-        
-        Returns:
-            {
-                "status": "success",
-                "text_chunks": 50,
-                "images": 10,
-                "tables": 5,
-                "processing_time": 12.5
-            }
-        """
-        pass
-```
-
-**Evaluation Criteria**:
-- Docling integration and PDF parsing accuracy
-- Image extraction and storage (filename, path, metadata)
-- Table extraction (preserve structure, render as image)
-- Text chunking strategy (chunk size, overlap)
-- Error handling (invalid PDF, memory overflow, etc.)
-
----
-
-### 2. Vector Store Integration (Critical)
-
-**Location**: `backend/app/services/vector_store.py`
-
-**Requirements**:
-```python
-class VectorStore:
-    async def store_text_chunks(
-        self, 
-        chunks: List[Dict[str, Any]], 
-        document_id: int
-    ) -> int:
-        """
-        Store text chunks with vector embeddings.
-        
-        Implementation steps:
-        1. Generate embeddings using OpenAI/HuggingFace
-        2. Store in pgvector (vector + metadata)
-        3. Include image/table references in metadata
-        
-        Returns:
-            Number of stored chunks
-        """
-        pass
-    
-    async def search_similar(
-        self, 
-        query: str, 
-        document_id: Optional[int] = None,
-        k: int = 5
-    ) -> List[Dict[str, Any]]:
-        """
-        Search for chunks similar to the query.
-        
-        Returns:
-            [
-                {
-                    "content": "...",
-                    "score": 0.95,
-                    "metadata": {...},
-                    "related_images": [...],
-                    "related_tables": [...]
-                }
-            ]
-        """
-        pass
-```
-
-**Evaluation Criteria**:
-- Embedding model selection and integration
-- pgvector utilization (cosine similarity, indexing)
-- Metadata management (image/table references)
-- Search accuracy and performance
-
----
-
-### 3. Multimodal Chat Engine (Critical)
-
-**Location**: `backend/app/services/chat_engine.py`
-
-**Requirements**:
-```python
-class ChatEngine:
-    async def process_message(
-        self,
-        conversation_id: int,
-        message: str,
-        document_id: Optional[int] = None
-    ) -> Dict[str, Any]:
-        """
-        Process user message and generate multimodal response.
-        
-        Implementation steps:
-        1. Load conversation history (multi-turn support)
-        2. Find relevant context using vector search
-        3. Find related images/tables
-        4. Generate answer using LLM
-        5. Include image/table URLs in response
-        
-        Returns:
-            {
-                "answer": "...",
-                "sources": [
-                    {
-                        "type": "text",
-                        "content": "...",
-                        "score": 0.95
-                    },
-                    {
-                        "type": "image",
-                        "url": "/uploads/images/abc123.png",
-                        "caption": "Figure 1: ..."
-                    },
-                    {
-                        "type": "table",
-                        "url": "/uploads/tables/xyz789.png",
-                        "caption": "Table 1: ..."
-                    }
-                ],
-                "processing_time": 2.5
-            }
-        """
-        pass
-```
-
-**Evaluation Criteria**:
-- RAG implementation quality (relevance, accuracy)
-- Multi-turn conversation support (context maintenance)
-- Include images/tables in responses
-- LLM prompt engineering
-- Response speed and user experience
+**Infrastructure:**
+- Docker & Docker Compose - Containerization
+- pytest - Testing framework (61% code coverage)
 
 ---
 
 ## System Architecture
 
 ```
-┌─────────────┐
-│   Frontend  │ (Next.js)
-│  Chat UI    │
-└──────┬──────┘
-       │ HTTP
-       ▼
-┌─────────────┐
-│   Backend   │ (FastAPI)
-│  API Server │
-└──────┬──────┘
+┌─────────────────────────────────────────────────────────┐
+│                    Frontend Layer                       │
+│              (Next.js 14 + TailwindCSS)                 │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐               │
+│  │ Upload   │  │ Documents│  │   Chat   │               │
+│  │   Page   │  │   List   │  │ Interface│               │
+│  └──────────┘  └──────────┘  └──────────┘               │
+└─────────────────────┬───────────────────────────────────┘
+                      │ HTTP/REST API
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│                   Backend API Layer                     │
+│                    (FastAPI)                            │
+│  ┌──────────────────┐  ┌──────────────────┐             │
+│  │ Documents API    │  │   Chat API       │             │
+│  │ - Upload         │  │   - Send Message │             │
+│  │ - List/Get       │  │   - Conversations│             │
+│  │ - Delete         │  │   - History      │             │
+│  └────────┬─────────┘  └────────┬─────────┘             │
+└───────────┼─────────────────────┼───────────────────────┘
+            │                     │
+            ▼                     ▼
+┌──────────────────┐    ┌──────────────────────────────┐
+│ Document         │    │      Chat Engine             │
+│ Processor        │    │   (RAG: Retrieval-Augmented  │
+│                  │    │        Generation)           │
+│ Orchestrates:    │    │  ┌──────────────────────┐    │
+│ - Docling Parser │    │  │ Load Conversation    │    │
+│ - Extractors     │    │  │ History              │    │
+│ - Validators     │    │  └──────────┬───────────┘    │
+└──────┬───────────┘    │             │                │
+       │                │             ▼                │
+       │                │  ┌──────────────────────┐    │
+       ├────────────────┼─▶│ Vector Search        │    │
+       │                │  │ (Semantic Similarity)│    │
+       │                │  │ (RAG Retrieval)      │    │
+       │                │  └──────────┬───────────┘    │
+       │                │             │                │
+       │                │             ▼                │
+       │                │  ┌──────────────────────┐    │
+       │                │  │ Find Related Media   │    │
+       │                │  │ (Images/Tables)      │    │
+       │                │  └──────────┬───────────┘    │
+       │                │             │                │
+       │                │             ▼                │
+       │                │  ┌──────────────────────┐    │
+       │                │  │ RAG Generation       │    │
+       │                │  │ (Context + History)  │    │
+       │                │  │ → LLM: OpenAI        │    │
+       │                │  │   GPT-4o-mini        │    │
+       │                │  └──────────────────────┘    │
+       │                └──────────────────────────────┘
        │
-       ├─────────────────┐
-       │                 │
-       ▼                 ▼
-┌─────────────┐   ┌─────────────┐
-│  Document   │   │    Chat     │
-│  Processor  │   │   Engine    │
-│  (Docling)  │   │   (RAG)     │
-└──────┬──────┘   └──────┬──────┘
-       │                 │
-       ▼                 ▼
-┌─────────────────────────────┐
-│      Vector Store           │
-│    (PostgreSQL+pgvector)    │
-└─────────────────────────────┘
-       │
        ▼
-┌─────────────────────────────┐
-│    File Storage             │
-│  (Images, Tables, PDFs)     │
-└─────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│              Extraction & Processing Layer               │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │ Text         │  │ Image        │  │ Table        │    │
+│  │ Extractor    │  │ Extractor    │  │ Extractor    │    │
+│  │              │  │              │  │              │    │
+│  │ - Chunking   │  │ - Docling    │  │ - Structure  │    │
+│  │ - Overlap    │  │ - PyMuPDF    │  │ - Rendering  │    │
+│  │ - Metadata   │  │ - Metadata   │  │ - Metadata   │    │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘    │
+│         │                 │                 │            │
+│         └─────────┬───────┴─────────┬───────┘            │
+│                   │                 │                    │
+│                   ▼                 ▼                    │
+│         ┌──────────────────┐  ┌──────────────────┐       │
+│         │ Binary Validator │  │ Vector Store     │       │
+│         │                  │  │                  │       │
+│         │ - Validate text  │  │ - Embeddings:    │       │
+│         │ - Filter binary  │  │   OpenAI         │       │
+│         │ - Clean data     │  │   text-embedding-│       │
+│         └──────────────────┘  │   3-small (1536) │       │
+│                               │ - Storage        │       │
+│                               │ - Search         │       │
+│                               └─────────┬────────┘       │
+└─────────────────────────────────────────┼────────────────┘
+                                          │
+                    ┌─────────────────────┼─────────────────────┐
+                    │                     │                     │
+                    ▼                     ▼                     ▼
+    ┌────────────────────── ┐  ┌──────────────────────┐  ┌──────────────────────┐
+    │   PostgreSQL +        │  │    File Storage      │  │   LLM Provider       │
+    │   pgvector            │  │                      │  │                      │
+    │                       │  │  - PDFs              │  │  - OpenAI            │
+    │  - Document Metadata  │  │  - Images            │  │    (GPT-4o-mini)     │
+    │  - Text Chunks        │  │  - Tables            │  │                      │
+    │  - Vector Embeddings  │  │                      │  │                      │
+    │  - Images Metadata    │  │                      │  │                      │
+    │  - Tables Metadata    │  │                      │  │                      │
+    │  - Conversations      │  │                      │  │                      │
+    │  - Messages           │  │                      │  │                      │
+    └───────────────────────┘  └──────────────────────┘  └──────────────────────┘
 ```
+
+**Key Components:**
+
+1. **Frontend Layer**: Next.js application with upload, document list, and chat interfaces
+2. **API Layer**: FastAPI REST endpoints for document management and chat
+3. **Document Processor**: Orchestrates PDF parsing using Docling and coordinates extraction
+4. **Extractors**: Specialized modules for text, image, and table extraction
+   - **TextExtractor**: Handles text chunking with overlap and metadata
+   - **ImageExtractor**: Extracts images from Docling and PyMuPDF with fallback
+   - **TableExtractor**: Extracts structured tables and renders them as images
+5. **Binary Validator**: Validates and filters binary data from text extraction
+6. **Chat Engine**: Implements RAG (Retrieval-Augmented Generation) pipeline with conversation history, semantic search, and LLM integration
+7. **Vector Store**: Manages embeddings using OpenAI text-embedding-3-small (1536 dimensions) and similarity search using pgvector
+8. **Database**: PostgreSQL with pgvector extension for vector operations and metadata storage
+9. **File Storage**: Filesystem storage for PDFs, extracted images, and table renders
+10. **LLM Provider**: OpenAI GPT-4o-mini for response generation
 
 ---
 
-## Data Models
-
-### Document
-```python
-class Document:
-    id: int
-    filename: str
-    file_path: str
-    upload_date: datetime
-    processing_status: str  # 'pending', 'processing', 'completed', 'error'
-    total_pages: int
-    text_chunks_count: int
-    images_count: int
-    tables_count: int
-```
-
-### DocumentChunk
-```python
-class DocumentChunk:
-    id: int
-    document_id: int
-    content: str
-    embedding: Vector(1536)  # pgvector
-    page_number: int
-    chunk_index: int
-    metadata: JSON  # {related_images: [...], related_tables: [...]}
-```
-
-### DocumentImage
-```python
-class DocumentImage:
-    id: int
-    document_id: int
-    file_path: str
-    page_number: int
-    caption: str
-    width: int
-    height: int
-```
-
-### DocumentTable
-```python
-class DocumentTable:
-    id: int
-    document_id: int
-    image_path: str  # Rendered table as image
-    data: JSON  # Structured table data
-    page_number: int
-    caption: str
-```
-
-### Conversation & Message
-```python
-class Conversation:
-    id: int
-    title: str
-    created_at: datetime
-    document_id: Optional[int]  # Conversation about specific document
-
-class Message:
-    id: int
-    conversation_id: int
-    role: str  # 'user', 'assistant'
-    content: str
-    sources: JSON  # Sources used in answer (text, images, tables)
-    created_at: datetime
-```
-
----
-
-## Tech Stack
-
-### Backend
-- **Framework**: FastAPI
-- **PDF Processing**: Docling
-- **Vector DB**: PostgreSQL + pgvector
-- **Embeddings**: OpenAI API or HuggingFace
-- **LLM**: OpenAI GPT-4o-mini or Ollama
-- **Task Queue**: Celery + Redis (optional)
-
-### Frontend
-- **Framework**: Next.js 14 (App Router)
-- **Styling**: TailwindCSS
-- **UI Components**: shadcn/ui
-- **State Management**: React Hooks
-- **API Client**: fetch/axios
-
-### Infrastructure
-- **Database**: PostgreSQL 15 + pgvector
-- **Cache**: Redis
-- **Container**: Docker + Docker Compose
-
----
-
-## Getting Started
+## Setup Instructions (Docker)
 
 ### Prerequisites
-- Docker & Docker Compose
-- Node.js 18+
-- Python 3.11+
-- OpenAI API Key (or Ollama for local LLM)
+- Docker & Docker Compose installed
+- API key for chosen LLM provider (see Environment Variables)
 
 ### Quick Start
 
 ```bash
 # 1. Clone repository
 git clone <repository-url>
-cd coding-test-4th
+cd coding-test-4h
 
-# 2. Set up environment
+# 2. Configure environment
+cd backend
 cp .env.example .env
-# Edit .env and add your OPENAI_API_KEY
+# Edit .env with your API keys (see Environment Variables section)
 
-# 3. Start all services
+# 3. Start services
 docker-compose up -d
 
-# 4. Access the application
-# Frontend: http://localhost:3000
-# Backend API: http://localhost:8000
-# API Docs: http://localhost:8000/docs
+# 4. Verify services
+docker-compose ps
+```
+
+**Access Points:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/docs
+
+**Stop Services:**
+```bash
+docker-compose down
 ```
 
 ---
 
-## Evaluation Criteria (100 points)
+## Environment Variables
 
-### 1. Code Quality (25 points)
-- **Structure** (10 points): Module separation, responsibility separation, reusability
-- **Readability** (8 points): Naming, comments, code style
-- **Error Handling** (7 points): Exception handling, error messages, recovery strategy
-
-### 2. Feature Implementation (40 points)
-- **Document Processing** (15 points):
-  - Docling integration and PDF parsing (5 points)
-  - Image extraction and storage (5 points)
-  - Table extraction and storage (5 points)
-
-- **Vector Store** (10 points):
-  - Embedding generation and storage (5 points)
-  - Similarity search accuracy (5 points)
-
-- **Chat Engine** (15 points):
-  - RAG implementation quality (5 points)
-  - Multimodal responses (images/tables included) (5 points)
-  - Multi-turn conversation support (5 points)
-
-### 3. UX/UI (15 points)
-- **Chat Interface** (8 points): Intuitiveness, responsiveness, image/table display
-- **Document Upload/Management** (4 points): Progress indication, error display
-- **Design** (3 points): Consistency, aesthetics
-
-### 4. Documentation (10 points)
-- **README** (4 points): Installation, execution, feature explanation
-- **Code Comments** (3 points): Complex logic explanation
-- **API Documentation** (3 points): Swagger or separate documentation
-
-### 5. Testing (10 points)
-- **Unit Tests** (5 points): Core logic testing
-- **Integration Tests** (3 points): API endpoint testing
-- **Test Coverage** (2 points): 60% or higher
-
----
-
-## Bonus Points (+20 points)
-
-- **Advanced PDF Processing** (+5 points): OCR, complex layout handling
-- **Multi-document Search** (+5 points): Search across multiple documents
-- **Real-time Chat** (+5 points): WebSocket-based
-- **Deployment** (+5 points): Production deployment setup (Railway, Vercel, etc.)
-
----
-
-## Submission Requirements
-
-### What to Submit
-1. **GitHub Repository** (public or private with access)
-2. **Complete source code** (backend + frontend)
-3. **Docker configuration** (docker-compose.yml)
-4. **Documentation** (README, API docs, architecture)
-5. **Test Results**: Screenshots and examples using the provided `1706.03762v7.pdf` file
-
-### README Must Include
-- Project overview
-- Tech stack
-- Setup instructions (Docker)
-- Environment variables (.env.example)
-- API testing examples **using the provided PDF**
-- Features implemented
-- Known limitations
-- Future improvements
-- **Screenshots (minimum 5) using `1706.03762v7.pdf`**:
-  - Document upload screen with the test PDF
-  - Document processing completion screen showing extraction results
-  - Chat interface with sample questions
-  - Answer example with images (Transformer architecture diagram)
-  - Answer example with tables (BLEU score comparisons)
-
-### Demo Requirements
-Your submission should include working examples with the "Attention Is All You Need" paper:
-
-1. **Document Processing Demo**: Show successful extraction of text, images, and tables
-2. **Chat Examples**: Include at least 3 working Q&A examples using the test PDF
-3. **Multimodal Responses**: Demonstrate answers that include both text and visual elements
-4. **Error Handling**: Show how your system handles edge cases
-
-**Note**: All evaluators will test your system using the same PDF to ensure fair and consistent assessment.
-
-### How to Submit
-1. Push code to GitHub
-2. Test that `docker-compose up` works
-3. Send repository URL via email
-4. Include any special instructions
-
----
-
-## Test Scenarios
-
-Use the provided "Attention Is All You Need" paper (`1706.03762v7.pdf`) for these test scenarios:
-
-### Scenario 1: Basic Document Processing
-1. Download and upload `1706.03762v7.pdf`
-2. Verify text, images, and tables extraction
-3. Check extracted content on document detail page
-4. **Expected Results**:
-   - Text chunks: ~80-100 chunks
-   - Images: ~6 figures (architecture diagrams)
-   - Tables: ~4-6 tables (performance results)
-
-### Scenario 2: Text-based Question
-1. Ask: **"What is the main contribution of this paper?"**
-2. **Expected Answer**: Should mention Transformer architecture and attention mechanisms
-3. Verify answer includes relevant text context from abstract/conclusion
-
-### Scenario 3: Image-related Question
-1. Ask: **"Show me the Transformer architecture diagram"**
-2. **Expected Result**: Should display Figure 1 (Transformer model architecture)
-3. Verify the architecture diagram image is included in chat response
-
-### Scenario 4: Table-related Question
-1. Ask: **"What are the BLEU scores for different models?"**
-2. **Expected Result**: Should display performance comparison tables
-3. Verify tables with BLEU scores are shown in chat
-
-### Scenario 5: Multi-turn Conversation
-1. First question: **"What attention mechanism does this paper propose?"**
-2. Follow-up: **"How does it compare to RNN and CNN?"**
-3. **Expected Behavior**: Second answer should reference the first question's context
-4. Verify conversation history is maintained
-
-### Scenario 6: Specific Technical Question
-1. Ask: **"What is the computational complexity of self-attention?"**
-2. **Expected Answer**: Should mention O(n²·d) complexity and reference Section 3.2.1
-3. Verify answer includes mathematical details from the paper
-
-### Additional Test Questions to Try
-
-**Architecture Questions**:
-- "Explain the encoder-decoder structure"
-- "What are the different types of attention used?"
-
-**Performance Questions**:
-- "How does the model perform on WMT translation tasks?"
-- "What are the training details and hyperparameters?"
-
-**Technical Questions**:
-- "What is positional encoding and why is it needed?"
-- "How many attention heads are used in the base model?"
-
----
-
-## Sample PDF for Testing
-
-For testing your implementation, download and use this technical paper:
-
-**📄 Test Document**: ["Attention Is All You Need" Paper](https://arxiv.org/pdf/1706.03762.pdf)
-- **Direct Download**: `https://arxiv.org/pdf/1706.03762.pdf`
-- **File Name**: `1706.03762v7.pdf` (save as this name)
-- **Paper Title**: "Attention Is All You Need" (Transformer Architecture)
-
-### Why This PDF is Perfect for Testing
-
-This technical paper contains all the elements needed to test your system:
-
-✅ **Text Content**: 
-- Multiple pages with academic text
-- Abstract, introduction, methodology sections
-- References and citations
-
-✅ **Images/Figures**: 
-- Architecture diagrams (Figure 1: Transformer model architecture)
-- Attention visualization diagrams
-- Model comparison charts
-
-✅ **Tables**: 
-- Performance comparison tables
-- Experimental results
-- Hyperparameter settings
-
-✅ **Complex Layout**: 
-- Two-column academic format
-- Mathematical equations
-- Mixed content types
-
-### Download Instructions
+Create `.env` file in `backend/` directory:
 
 ```bash
-# Download the test PDF
-wget https://arxiv.org/pdf/1706.03762.pdf -O 1706.03762v7.pdf
+# Database
+DATABASE_URL=postgresql://docuser:docpass@localhost:5432/docdb
 
-# Or use curl
+# Redis (optional)
+REDIS_URL=redis://localhost:6379/0
+
+# LLM Provider (choose one: openai, ollama, gemini, groq)
+LLM_PROVIDER=openai
+
+# OpenAI (if LLM_PROVIDER=openai)
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+
+# Ollama (if LLM_PROVIDER=ollama)
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
+
+# Gemini (if LLM_PROVIDER=gemini)
+GOOGLE_API_KEY=your-google-api-key
+
+# Groq (if LLM_PROVIDER=groq)
+GROQ_API_KEY=your-groq-api-key
+
+# Upload Configuration
+UPLOAD_DIR=./uploads
+MAX_FILE_SIZE=52428800  # 50 MB
+
+# Vector Store Configuration
+EMBEDDING_DIMENSION=1536
+CHUNK_SIZE=1000
+CHUNK_OVERLAP=200
+TOP_K_RESULTS=5
+```
+
+**Note:** Only configure the LLM provider you intend to use. See README.md "Free LLM Options" section for free alternatives.
+
+---
+
+## API Testing Examples
+
+All examples use the test PDF: `1706.03762v7.pdf` ("Attention Is All You Need" paper)
+
+**Download test PDF:**
+```bash
 curl -o 1706.03762v7.pdf https://arxiv.org/pdf/1706.03762.pdf
 ```
 
-**Important**: Use this specific PDF for your testing and demonstrations to ensure consistent evaluation across all submissions.
+### Example 1: Upload Document
 
----
-
-## Implementation Guidelines
-
-Refer to the service skeleton files for detailed implementation guidance:
-- `backend/app/services/document_processor.py` - Document processing guidelines
-- `backend/app/services/vector_store.py` - Vector store implementation tips
-- `backend/app/services/chat_engine.py` - Chat engine implementation tips
-
-Each file contains detailed TODO comments with implementation hints and examples.
-
----
-
-## Troubleshooting
-
-### Document Processing Issues
-**Problem**: Docling can't extract tables
-**Solution**: 
-- Check PDF format (ensure it's not scanned image)
-- Add fallback parsing logic
-- Manually define table structure patterns
-
-### LLM API Costs
-**Problem**: OpenAI API is expensive
-**Solution**: Use free alternatives
-- Use caching for repeated queries
-- Use cheaper models (gpt-3.5-turbo)
-- Use local LLM (Ollama) for development
-
-### Vector Search Issues
-**Problem**: Search results are not relevant
-**Solution**:
-- Verify embedding model is working
-- Check chunk size and overlap settings
-- Ensure pgvector extension is installed
-- Test with simple queries first
-
-### CORS Issues
-**Problem**: Frontend can't call backend API
-**Solution**:
-- Add CORS middleware in FastAPI
-- Allow origin: http://localhost:3000
-- Check network configuration in Docker
-
----
-
-## Free LLM Options
-
-You don't need to pay for OpenAI API! Here are free alternatives:
-
-### Option 1: Ollama (Recommended for Development)
-
-**Completely free, runs locally on your machine**
-
-1. **Install Ollama**
 ```bash
-# Mac
-brew install ollama
-
-# Linux
-curl -fsSL https://ollama.com/install.sh | sh
-
-# Windows
-# Download from https://ollama.com/download
+curl -X POST "http://localhost:8000/api/documents/upload" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@1706.03762v7.pdf"
 ```
 
-2. **Download a model**
-```bash
-# Llama 3.2 (3B - fast, good for development)
-ollama pull llama3.2
-
-# Or Llama 3.1 (8B - better quality)
-ollama pull llama3.1
-
-# Or Mistral (7B - good balance)
-ollama pull mistral
+**Response:**
+```json
+{
+  "id": 1,
+  "filename": "1706.03762v7.pdf",
+  "status": "pending",
+  "message": "Document uploaded successfully. Processing will begin shortly."
+}
 ```
 
-3. **Update your .env**
+### Example 2: Check Processing Status
+
 ```bash
-# Use Ollama instead of OpenAI
-LLM_PROVIDER=ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2
+curl "http://localhost:8000/api/documents/1"
 ```
 
-**Pros**: Free, private, no API limits, works offline
-**Cons**: Requires decent hardware (8GB+ RAM), slower than cloud APIs
-
----
-
-### Option 2: Google Gemini (Free Tier)
-
-**Free tier: 60 requests per minute**
-
-1. **Get free API key**
-   - Go to https://makersuite.google.com/app/apikey
-   - Click "Create API Key"
-   - Copy your key
-
-2. **Update .env**
-```bash
-GOOGLE_API_KEY=your-gemini-api-key
-LLM_PROVIDER=gemini
+**Response:**
+```json
+{
+  "id": 1,
+  "filename": "1706.03762v7.pdf",
+  "status": "completed",
+  "total_pages": 15,
+  "text_chunks_count": 87,
+  "images_count": 6,
+  "tables_count": 4,
+  "upload_date": "2025-01-15T10:30:00"
+}
 ```
 
-**Pros**: Free, fast, good quality
-**Cons**: Rate limits, requires internet
+### Example 3: Text-based Question
 
----
-
-### Option 3: Groq (Free Tier)
-
-**Free tier: Very fast inference, generous limits**
-
-1. **Get free API key**
-   - Go to https://console.groq.com
-   - Sign up and get API key
-
-2. **Update .env**
 ```bash
-GROQ_API_KEY=your-groq-api-key
-LLM_PROVIDER=groq
+curl -X POST "http://localhost:8000/api/chat" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "What is the main contribution of this paper?",
+    "document_id": 1
+  }'
 ```
 
-**Pros**: Free, extremely fast, good quality
-**Cons**: Rate limits, requires internet
+**Response:**
+```json
+{
+  "conversation_id": 1,
+  "message_id": 1,
+  "answer": "The main contribution of this paper is the introduction of the Transformer architecture, which relies entirely on attention mechanisms, eliminating the need for recurrence and convolutions...",
+  "sources": [
+    {
+      "type": "text",
+      "content": "We propose a new simple network architecture, the Transformer, based solely on attention mechanisms...",
+      "page": 1,
+      "score": 0.95
+    }
+  ],
+  "processing_time": 2.3
+}
+```
+
+### Example 4: Image-related Question
+
+```bash
+curl -X POST "http://localhost:8000/api/chat" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Show me the Transformer architecture diagram",
+    "conversation_id": 1
+  }'
+```
+
+**Response:**
+```json
+{
+  "conversation_id": 1,
+  "message_id": 2,
+  "answer": "Here is the Transformer architecture diagram from the paper. The model consists of an encoder and decoder stack...",
+  "sources": [
+    {
+      "type": "image",
+      "url": "/uploads/images/figure1.png",
+      "caption": "Figure 1: The Transformer - model architecture",
+      "page": 2
+    },
+    {
+      "type": "text",
+      "content": "The Transformer follows this architecture with stacked self-attention and point-wise, fully connected layers...",
+      "page": 2,
+      "score": 0.92
+    }
+  ],
+  "processing_time": 1.8
+}
+```
+
+### Example 5: Table-related Question
+
+```bash
+curl -X POST "http://localhost:8000/api/chat" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "What are the BLEU scores for different models?",
+    "conversation_id": 1
+  }'
+```
+
+**Response:**
+```json
+{
+  "conversation_id": 1,
+  "message_id": 3,
+  "answer": "According to the paper, the BLEU scores for different models on WMT 2014 English-to-German translation are shown in the following table...",
+  "sources": [
+    {
+      "type": "table",
+      "url": "/uploads/tables/table1.png",
+      "caption": "Table 1: BLEU scores on WMT 2014 English-to-German translation",
+      "page": 3,
+      "data": {
+        "rows": [
+          ["Model", "BLEU"],
+          ["Transformer (base)", "28.4"],
+          ["Transformer (big)", "29.3"]
+        ]
+      }
+    }
+  ],
+  "processing_time": 2.1
+}
+```
+
+### Example 6: Multi-turn Conversation
+
+```bash
+# First question
+curl -X POST "http://localhost:8000/api/chat" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "What attention mechanism does this paper propose?",
+    "conversation_id": 1
+  }'
+
+# Follow-up (uses conversation history)
+curl -X POST "http://localhost:8000/api/chat" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "How does it compare to RNN and CNN?",
+    "conversation_id": 1
+  }'
+```
 
 ---
 
-### Comparison Table
+## Features Implemented
 
-| Provider | Cost | Speed | Quality | Setup |
-|----------|------|-------|---------|-------|
-| **Ollama** | Free | Medium | Good | Easy |
-| **Gemini** | Free | Fast | Very Good | Very Easy |
-| **Groq** | Free | Very Fast | Good | Very Easy |
-| OpenAI | Paid | Fast | Excellent | Very Easy |
+### Document Processing Pipeline
 
-**Recommended**: Use **Ollama** for development (free, no limits)
+**PDF Parsing & Extraction:**
+- Docling integration for robust PDF parsing
+- Text extraction with intelligent chunking (1000 chars, 200 overlap)
+- Image extraction with metadata (caption, dimensions, page number)
+- Table extraction as structured JSON + rendered images
+- Background processing with status tracking (pending → processing → completed/error)
+
+**Error Handling:**
+- Invalid file type validation
+- File size limit enforcement (50 MB)
+- Graceful error recovery with status updates
+- Retry mechanisms for transient failures
+
+### Vector Store Integration
+
+**Embedding Generation:**
+- OpenAI API (text-embedding-3-small, 1536 dimensions) - primary
+- HuggingFace Sentence Transformers - fallback option
+
+**Search & Retrieval:**
+- PostgreSQL + pgvector for efficient similarity search
+- Cosine similarity with configurable top-k results
+- Metadata management (image/table references in chunk metadata)
+- Related content retrieval by page number or metadata
+
+### Multimodal Chat Engine
+
+**RAG Implementation:**
+- Retrieval-Augmented Generation with context-aware responses
+- Multi-turn conversation support (maintains history)
+- Vector-based semantic search for relevant chunks
+- Multimodal responses (includes related images and tables)
+
+**LLM Provider Support:**
+- OpenAI GPT-4o-mini (default, best quality)
+- Ollama (local, free, no rate limits)
+- Google Gemini (free tier, 60 req/min)
+- Groq (free tier, very fast)
+
+**Response Format:**
+- Structured answers with source attribution
+- Source types: text, image, table
+- Page numbers and relevance scores included
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/documents/upload` | POST | Upload PDF document |
+| `/api/documents` | GET | List documents (paginated) |
+| `/api/documents/{id}` | GET | Get document details |
+| `/api/documents/{id}` | DELETE | Delete document |
+| `/api/chat` | POST | Send chat message |
+| `/api/conversations` | GET | List conversations |
+| `/api/conversations/{id}` | GET | Get conversation history |
+
+### Testing
+
+- **Overall Coverage:** 77%
+- **Unit Test Coverage:** 74% (115 tests)
+- **Integration Test Coverage:** 29% (10 tests)
+- **Coverage Areas:**
+  - Document processing logic
+  - Vector store operations
+  - Chat engine functionality
+  - API error handling
+  - LLM provider integration
+
+**Running Tests:**
+```bash
+# Run all tests (unit + integration)
+cd backend
+pytest
+
+# Run unit tests only
+pytest tests/unit/
+
+# Run integration tests only
+pytest tests/integration/
+
+# Run with coverage report
+pytest --cov=app --cov-config=.coveragerc --cov-report=term
+```
 
 ---
 
-## FAQ
+## Known Limitations
 
-**Q: Docling won't install.**
-A: Try `pip install docling` or use the Docker image.
+1. **PDF Processing**
+   - Optimized for text-based PDFs; scanned PDFs have limited accuracy
+   - Complex multi-column layouts may require chunking parameter tuning
+   - Large PDFs (>100 pages) have longer processing times
 
-**Q: I don't have an OpenAI API key.**
-A: You can install Ollama locally and use a free LLM (see Free LLM Options section).
+2. **Search Capabilities**
+   - Single document search only (multi-document search not implemented)
+   - Search accuracy depends on embedding model quality
+   - Chunk boundaries may split related content
 
-**Q: Where should I save images?**
-A: Save to `backend/uploads/images/` directory and store only the path in DB.
+3. **Performance**
+   - Synchronous document processing (no background queue)
+   - No caching for repeated queries
+   - Vector search performance degrades with very large collections
 
-**Q: How should I display tables?**
-A: Render tables as images or display JSON data as HTML tables in frontend.
+4. **LLM Integration**
+   - Response quality varies by provider
+   - Free providers have rate limits
+   - Long conversations may exceed context windows
 
-**Q: Where do I get the test PDF file?**
-A: Download from `https://arxiv.org/pdf/1706.03762.pdf` and save as `1706.03762v7.pdf`. This is the "Attention Is All You Need" paper.
-
-**Q: Can I use a different PDF for testing?**
-A: For development, yes. But your final submission must demonstrate working examples with the provided "Attention Is All You Need" paper for consistent evaluation.
-
-**Q: What if my system can't process the test PDF?**
-A: The test PDF is a standard academic paper. If your system can't handle it, there may be issues with your PDF parsing or Docling integration that need to be fixed.
-
-**Q: How do I test the system locally?**
-A: Follow the Getting Started section, download the test PDF, upload it through your frontend, and try the sample questions from the Test Scenarios section.
-
----
-
-## Questions?
-
-If you have any questions, please create an issue or contact us via email.
-
-Good luck!
+5. **Frontend**
+   - Basic UI implementation
 
 ---
 
-## Tips for Success
+## Future Improvements
 
-1. **Start Simple**: Get core features working before adding advanced features
-2. **Test Early**: Test document processing with sample PDF immediately
-3. **Use Tools**: Leverage Docling, LangChain to save time
-4. **Focus on Core**: Perfect the RAG pipeline first
-5. **Document Well**: Clear README helps evaluators understand your work
-6. **Handle Errors**: Graceful error handling shows maturity
-7. **Ask Questions**: If requirements are unclear, document your assumptions
+1. **Enhanced Processing**
+   - OCR support for scanned PDFs
+   - Better complex layout handling
+   - Support for DOCX, HTML formats
+
+2. **Advanced Search**
+   - Multi-document search
+   - Hybrid search (keyword + semantic)
+   - Advanced query understanding
+
+3. **Performance**
+   - Query caching
+   - Background job queue (Celery)
+   - Database optimization
+
+4. **User Experience**
+   - WebSocket-based real-time updates
+   - Better error messages
+   - Document preview
+   - Conversation export
+
+5. **LLM Enhancements**
+   - Streaming responses
+   - Custom prompt templates
+   - Multi-modal LLM support
+
+6. **Production Readiness**
+   - User authentication
+   - Rate limiting
+   - Document access control
+   - Horizontal scaling
 
 ---
 
-## Support
+## Screenshots
 
-For questions about this coding challenge:
-- Open an issue in this repository
-- Email: recruitment@interopera.co
+All screenshots demonstrate the system using `1706.03762v7.pdf` ("Attention Is All You Need" paper).
+
+### 1. Document Upload Screen
+![Document Upload](screenshots/01-upload-screen.png)
+![Document Upload](screenshots/02-upload-screen.png)
+*Uploading the test PDF file through the web interface*
+
+### 2. Document Processing Completion
+![Processing Complete](screenshots/03-processing-complete.png)
+*Processing results showing extraction statistics:
+- Text chunks: 83
+- Images: 6 figures
+- Tables: 4 tables
+- Status: Completed*
+
+### 3. Chat Interface
+![Chat Interface](screenshots/04-chat-interface.png)
+*Chat interface with sample questions about the Transformer paper*
+
+### 4. Answer with Images (Transformer Architecture Diagram)
+![Answer with Images](screenshots/05-answer-with-images.png)
+*Chat response showing Figure 1 (Transformer architecture diagram) along with text explanation*
+
+### 5. Answer with Tables (BLEU Score Comparisons)
+![Answer with Tables](screenshots/06-answer-with-tables.png)
+![Answer with Tables](screenshots/07-answer-with-tables.png)
+*Chat response displaying performance comparison tables with BLEU scores*
+
+### 6. Multi-turn Conversation
+![Multi-turn Conversation](screenshots/09-multiturn-question.png)
+![Multi-turn Conversation](screenshots/08-multiturn-question.png)
+*Chat response displaying performance comparison tables with BLEU scores*
+
+### 7. Specific Technical Question
+![Specific Technical Question](screenshots/10-tech-question.png)
+*Chat response displaying performance comparison tables with BLEU scores*
 
 ---
-
-**Version**: 1.0  
-**Last Updated**: 2025-11-03  
-**Author**: InterOpera-Apps Hiring Team

@@ -17,8 +17,8 @@ router = APIRouter()
 
 @router.post("/upload")
 async def upload_document(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_db)
 ):
     """
@@ -58,9 +58,25 @@ async def upload_document(
     db.commit()
     db.refresh(document)
     
-    # TODO: Trigger background processing
-    # background_tasks.add_task(process_document_task, document.id, file_path, db)
-    # For now, you can process synchronously or implement Celery
+    # Define background task function
+    async def process_document_task(file_path: str, doc_id: int):
+        """Wrapper for async document processing in background"""
+        # Create a new database session for the background task
+        from app.db.session import SessionLocal
+        task_db = SessionLocal()
+        try:
+            processor = DocumentProcessor(task_db)
+            await processor.process_document(file_path, doc_id)
+        except Exception as e:
+            print(f"Error in background document processing: {e}")
+            import traceback
+            traceback.print_exc()
+        finally:
+            task_db.close()
+    
+    # Use FastAPI's BackgroundTasks (runs after response is sent)
+    # This ensures the upload endpoint returns immediately
+    background_tasks.add_task(process_document_task, file_path, document.id)
     
     return {
         "id": document.id,
@@ -78,25 +94,67 @@ async def list_documents(
 ):
     """
     Get list of all documents
-    """
-    documents = db.query(Document).offset(skip).limit(limit).all()
     
-    return {
-        "documents": [
+    Optimized to return documents quickly even if count query is slow.
+    """
+    import time
+    start_time = time.time()
+    
+    try:
+        # First, get documents quickly (this should be fast)
+        print(f"list_documents: Starting query at {time.time()}")
+        documents = db.query(Document).order_by(Document.upload_date.desc()).offset(skip).limit(limit).all()
+        query_time = time.time() - start_time
+        print(f"list_documents: Documents fetched in {query_time:.3f}s")
+        
+        # Build response with documents first
+        result_documents = [
             {
                 "id": doc.id,
                 "filename": doc.filename,
-                "upload_date": doc.upload_date,
+                "upload_date": doc.upload_date.isoformat() if doc.upload_date else None,
                 "status": doc.processing_status,
-                "total_pages": doc.total_pages,
-                "text_chunks": doc.text_chunks_count,
-                "images": doc.images_count,
-                "tables": doc.tables_count
+                "total_pages": doc.total_pages or 0,
+                "text_chunks": doc.text_chunks_count or 0,
+                "images": doc.images_count or 0,
+                "tables": doc.tables_count or 0
             }
             for doc in documents
-        ],
-        "total": db.query(Document).count()
-    }
+        ]
+        
+        # Try to get count, but don't let it block if it's slow
+        # Use a timeout or estimate if count is taking too long
+        total = None
+        try:
+            count_start = time.time()
+            total = db.query(Document).count()
+            count_time = time.time() - count_start
+            if count_time > 0.5:  # Log if count takes more than 0.5 seconds
+                print(f"WARNING: Count query took {count_time:.2f} seconds")
+        except Exception as count_error:
+            print(f"WARNING: Count query failed: {count_error}")
+            # Estimate total based on returned documents
+            # If we got a full page, there might be more
+            total = len(documents) if len(documents) < limit else len(documents) + 1
+        
+        total_time = time.time() - start_time
+        if total_time > 1.0:
+            print(f"WARNING: list_documents total time: {total_time:.2f} seconds")
+        
+        result = {
+            "documents": result_documents,
+            "total": total or len(result_documents)  # Fallback to len if count failed
+        }
+        
+        print(f"list_documents: Returning {len(result_documents)} documents (total: {total}) in {total_time:.3f}s")
+        return result
+        
+    except Exception as e:
+        error_time = time.time() - start_time
+        print(f"ERROR in list_documents after {error_time:.2f}s: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching documents: {str(e)}")
 
 
 @router.get("/{document_id}")

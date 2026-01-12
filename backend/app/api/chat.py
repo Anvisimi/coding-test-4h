@@ -57,40 +57,75 @@ async def send_message(
         db.commit()
         db.refresh(conversation)
     
-    # Save user message
-    user_message = Message(
-        conversation_id=conversation.id,
-        role="user",
-        content=request.message
-    )
-    db.add(user_message)
-    db.commit()
+    try:
+        # Save user message
+        user_message = Message(
+            conversation_id=conversation.id,
+            role="user",
+            content=request.message
+        )
+        db.add(user_message)
+        db.commit()
+        db.refresh(user_message)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save user message: {str(e)}")
     
-    # TODO: Process message with ChatEngine
-    # chat_engine = ChatEngine(db)
-    # result = await chat_engine.process_message(
-    #     conversation_id=conversation.id,
-    #     message=request.message,
-    #     document_id=request.document_id
-    # )
-    
-    # For now, return placeholder response
-    result = {
-        "answer": "This is a placeholder response. Implement ChatEngine to process messages.",
-        "sources": [],
-        "processing_time": 0.0
-    }
+    # Process message with ChatEngine
+    try:
+        chat_engine = ChatEngine(db)
+        result = await chat_engine.process_message(
+            conversation_id=conversation.id,
+            message=request.message,
+            document_id=request.document_id
+        )
+    except Exception as e:
+        # Rollback any partial transaction from chat engine
+        db.rollback()
+        # Still save an error message
+        try:
+            assistant_message = Message(
+                conversation_id=conversation.id,
+                role="assistant",
+                content="Sorry, I encountered an error processing your message. Please try again.",
+                sources=[]
+            )
+            db.add(assistant_message)
+            from datetime import datetime
+            conversation.updated_at = datetime.utcnow()
+            db.commit()
+            db.refresh(assistant_message)
+            
+            return ChatResponse(
+                conversation_id=conversation.id,
+                message_id=assistant_message.id,
+                answer=assistant_message.content,
+                sources=[],
+                processing_time=0.0
+            )
+        except Exception as e2:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Failed to process message: {str(e)}")
     
     # Save assistant message
-    assistant_message = Message(
-        conversation_id=conversation.id,
-        role="assistant",
-        content=result["answer"],
-        sources=result.get("sources", [])
-    )
-    db.add(assistant_message)
-    db.commit()
-    db.refresh(assistant_message)
+    try:
+        assistant_message = Message(
+            conversation_id=conversation.id,
+            role="assistant",
+            content=result["answer"],
+            sources=result.get("sources", [])
+        )
+        db.add(assistant_message)
+        
+        # Update conversation's updated_at timestamp
+        from datetime import datetime
+        conversation.updated_at = datetime.utcnow()
+        
+        db.commit()
+        db.refresh(assistant_message)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save assistant message: {str(e)}")
     
     return ChatResponse(
         conversation_id=conversation.id,

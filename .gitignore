@@ -31,6 +31,12 @@ uploads/
 *.jpg
 *.jpeg
 
+# Screenshots (keep these - needed for documentation)
+!screenshots/
+!screenshots/**/*.png
+!screenshots/**/*.jpg
+!screenshots/**/*.jpeg
+
 # Database
 *.db
 *.sqlite
@@ -44,3 +50,12 @@ docker-compose.override.yml
 # OS
 .DS_Store
 Thumbs.db
+
+# Coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.cover
+.hypothesis/
+.pytest_cache/
