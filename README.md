@@ -464,7 +464,7 @@ curl -X POST "http://localhost:8000/api/chat" \
 ### Testing
 
 - **Overall Coverage ( Unit Test + Integration Test ):** 77%
-- **Unit Test Coverage:** 74% (115 tests)
+- **Unit Test Coverage:** 74% 
 
 **Running Tests:**
 ```bash
