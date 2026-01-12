@@ -463,15 +463,8 @@ curl -X POST "http://localhost:8000/api/chat" \
 
 ### Testing
 
-- **Overall Coverage:** 77%
+- **Overall Coverage ( Unit Test + Integration Test ):** 77%
 - **Unit Test Coverage:** 74% (115 tests)
-- **Integration Test Coverage:** 29% (10 tests)
-- **Coverage Areas:**
-  - Document processing logic
-  - Vector store operations
-  - Chat engine functionality
-  - API error handling
-  - LLM provider integration
 
 **Running Tests:**
 ```bash
